@@ -1,0 +1,56 @@
+services:
+  nats-server:
+    container_name: nats-server
+    image: nats:latest
+    ports:
+      - "8222:8222"
+
+  client-gateway:
+    container_name: client-gateway
+    build: ./client-gateway
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./client-gateway/src:/usr/src/app/src
+    command: yarn run start:dev
+    environment:
+      - PORT=3000
+      - NATS_SERVER_URL=nats://nats-server:4222
+
+  products-ms:
+    container_name: products-ms
+    build: ./products-ms
+    volumes:
+      - ./products-ms/src:/usr/src/app/src
+    command: yarn run start:dev
+    environment:
+      - PORT=3001
+      - NATS_SERVER_URL=nats://nats-server:4222
+      - DATABASE_URL=file:./dev.db
+
+  orders-db:
+    container_name: orders-db
+    image: postgres:16.2
+    restart: always
+    volumes:
+      - ./orders-ms/postgres:/var/lib/postgresql/data
+    ports:
+      - "5450:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=orders
+
+  orders-ms:
+    depends_on:
+      - orders-db
+    container_name: orders-ms
+    build: ./orders-ms
+    volumes:
+      - ./orders-ms/src:/usr/src/app/src
+    command: yarn run start:dev
+    environment:
+      - PORT=3002
+      - NATS_SERVER_URL=nats://nats-server:4222
+      - DATABASE_URL=postgresql://postgres:postgres@orders-db:5432/orders?schema=public
+    
