@@ -6,6 +6,8 @@ services:
       - "8222:8222"
 
   client-gateway:
+    depends_on: 
+      - nats-server
     container_name: client-gateway
     build: ./client-gateway
     ports:
@@ -18,6 +20,8 @@ services:
       - NATS_SERVER_URL=nats://nats-server:4222
 
   products-ms:
+    depends_on:
+      - client-gateway
     container_name: products-ms
     build: ./products-ms
     volumes:
@@ -44,6 +48,7 @@ services:
   orders-ms:
     depends_on:
       - orders-db
+      - client-gateway
     container_name: orders-ms
     build: ./orders-ms
     volumes:
