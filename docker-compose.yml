@@ -16,8 +16,8 @@ services:
       - ./client-gateway/src:/usr/src/app/src
     command: yarn run start:dev
     environment:
-      - PORT=3000
-      - NATS_SERVER_URL=nats://nats-server:4222
+      - PORT=${CLIENT_GATEWAY_PORT}
+      - NATS_SERVER_URL=${NATS_SERVER_URL}
 
   products-ms:
     depends_on:
@@ -29,7 +29,7 @@ services:
     command: yarn run start:dev
     environment:
       - PORT=3001
-      - NATS_SERVER_URL=nats://nats-server:4222
+      - NATS_SERVER_URL=${NATS_SERVER_URL}
       - DATABASE_URL=file:./dev.db
 
   orders-db:
@@ -56,6 +56,23 @@ services:
     command: yarn run start:dev
     environment:
       - PORT=3002
-      - NATS_SERVER_URL=nats://nats-server:4222
-      - DATABASE_URL=postgresql://postgres:postgres@orders-db:5432/orders?schema=public
-    
+      - NATS_SERVER_URL=${NATS_SERVER_URL}
+      - DATABASE_URL=${ORDERS_MS_DATABASE_URL}
+
+  payments-ms:
+    depends_on:
+      - client-gateway
+    container_name: payments-ms
+    build: ./payments-ms
+    volumes:
+      - ./payments-ms/src:/usr/src/app/src
+    ports:
+      - "${PAYMENTS_MS_PORT}:${PAYMENTS_MS_PORT}"      
+    command: yarn run start:dev
+    environment:
+      - PORT=${PAYMENTS_MS_PORT}
+      - NATS_SERVER_URL=${NATS_SERVER_URL}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - SUCCESS_URL=${SUCCESS_URL}
+      - CANCEL_URL=${CANCEL_URL}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
